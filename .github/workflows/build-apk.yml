@@ -22,12 +22,11 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Android SDK
-      uses: malinskiy/action-android/install-sdk@v1.1.0
+      uses: malinskiy/action-android/install-sdk@release/0.1.7  # FIXED VERSION!
       with:
-        api-level: 30  # Target SDK dari Foody
-        target: google_apis
+        api-level: 30  # Target SDK Foody
 
-    - name: Install NDK r25b (for libntong.so)
+    - name: Install NDK r25b (JNI/native)
       run: |
         sdkmanager "ndk;25.1.8937393"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
