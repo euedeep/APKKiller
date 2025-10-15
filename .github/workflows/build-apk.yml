@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,22 +21,27 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Set up NDK (for JNI/native code)
-      uses: android-actions/setup-ndk@v1
+    - name: Setup Android SDK
+      uses: malinskiy/action-android/install-sdk@v1.1.0
       with:
-        ndk-version: '25.1.8937393'  # Adjust to your NDK version
+        api-level: 30  # Target SDK dari Foody
+        target: google_apis
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || chmod +x ./app/gradlew  # Adjust path if needed
+    - name: Install NDK r25b (for libntong.so)
+      run: |
+        sdkmanager "ndk;25.1.8937393"
+        echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug  # Or ./gradlew assembleRelease for signed
+    - name: Grant execute permission
+      run: chmod +x gradlew || find . -name "gradlew" -exec chmod +x {} \;
 
-    - name: Upload APK Artifact
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
+      env:
+        ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: APKKiller-debug.apk
-        path: app/build/outputs/apk/debug/app-debug.apk  # Adjust path if needed
+        path: app/build/outputs/apk/debug/app-debug.apk
