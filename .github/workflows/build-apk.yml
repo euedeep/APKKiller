@@ -1,4 +1,4 @@
-name: Build APKKiller APK
+name: Build APKKiller
 
 on:
   push:
@@ -15,29 +15,43 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 11
+    - name: Set up JDK 17 (REQUIRED for sdkmanager)
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'  # FIXED! Version 61
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: malinskiy/action-android/install-sdk@release/0.1.7  # FIXED VERSION!
-      with:
-        api-level: 30  # Target SDK Foody
-
-    - name: Install NDK r25b (JNI/native)
+    - name: Setup Android SDK MANUAL (STABLE!)
       run: |
+        # Download commandlinetools
+        mkdir -p $ANDROID_HOME/cmdline-tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+        
+        # PATH
+        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+        
+        # Accept licenses + install
+        yes | sdkmanager --licenses
+        sdkmanager "platforms;android-30" "build-tools;30.0.3"
         sdkmanager "ndk;25.1.8937393"
+        
+        # Export vars
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
+        echo "PATH=$PATH" >> $GITHUB_ENV
+
+    - name: Verify Setup
+      run: |
+        java -version
+        sdkmanager --version
+        ls $ANDROID_NDK_HOME
 
     - name: Grant execute permission
       run: chmod +x gradlew || find . -name "gradlew" -exec chmod +x {} \;
 
     - name: Build with Gradle
       run: ./gradlew assembleDebug
-      env:
-        ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
